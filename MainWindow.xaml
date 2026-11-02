@@ -1,0 +1,87 @@
+<Window x:Class="BlatmetroBrowser.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Blatmetro Browser"
+        Width="1280" Height="820" MinWidth="800" MinHeight="540"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBackground}"
+        Foreground="{StaticResource TextPrimary}"
+        FontFamily="Segoe UI"
+        PreviewKeyDown="Window_PreviewKeyDown">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="46" />
+            <RowDefinition Height="58" />
+            <RowDefinition Height="34" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Tab strip -->
+        <Border Grid.Row="0" Background="#0C0F16" Padding="8,5,8,0">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Content="+" FontSize="21" Padding="9,1" ToolTip="Новая вкладка (Ctrl+T)"
+                            Click="NewTab_Click" />
+                    <Button x:Name="MaximizeButton" Style="{StaticResource ToolbarButton}"
+                            Content="□" FontSize="16" Padding="9,1" ToolTip="Развернуть / восстановить окно"
+                            Click="Maximize_Click" />
+                    <Button x:Name="FullscreenButton" Style="{StaticResource ToolbarButton}"
+                            Content="⛶" FontSize="19" Padding="9,1" ToolTip="Полноэкранный режим (F11)"
+                            Click="Fullscreen_Click" />
+                </StackPanel>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="TabsStrip" Orientation="Horizontal" />
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- Navigation toolbar -->
+        <Border Grid.Row="1" Background="{StaticResource Surface}" Padding="10,7">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="BackButton" Style="{StaticResource ToolbarButton}" Content="←"
+                            ToolTip="Назад" IsEnabled="False" Click="Back_Click" />
+                    <Button x:Name="ForwardButton" Style="{StaticResource ToolbarButton}" Content="→"
+                            ToolTip="Вперёд" IsEnabled="False" Click="Forward_Click" />
+                    <Button x:Name="ReloadButton" Style="{StaticResource ToolbarButton}" Content="↻"
+                            ToolTip="Обновить" Click="Reload_Click" />
+                    <Button Style="{StaticResource ToolbarButton}" Content="⌂"
+                            ToolTip="Домашняя страница" Click="Home_Click" />
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ComboBox x:Name="SearchEngineBox" Width="132" Height="34" Margin="0,0,8,0"
+                              VerticalContentAlignment="Center" ToolTip="Поисковая система"
+                              SelectionChanged="SearchEngineBox_SelectionChanged" DropDownClosed="SearchEngineBox_DropDownClosed"
+                              Background="#202737" Foreground="#F3F4FA"
+                              BorderBrush="#30394B" />
+                    <Button x:Name="BookmarkButton" Style="{StaticResource ToolbarButton}" Content="☆"
+                            FontSize="20" ToolTip="Добавить или удалить закладку" Click="Bookmark_Click" />
+                </StackPanel>
+
+                <Border Margin="10,0" CornerRadius="10" Background="#202737" BorderBrush="#30394B" BorderThickness="1">
+                    <DockPanel LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Left" Text="⌕" FontSize="20" Foreground="{StaticResource TextSecondary}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0" />
+                        <TextBox x:Name="AddressBox" Style="{StaticResource AddressBoxStyle}"
+                                 Background="Transparent" BorderThickness="0"
+                                 ToolTip="Введите адрес сайта или поисковый запрос"
+                                 KeyDown="AddressBox_KeyDown" />
+                    </DockPanel>
+                </Border>
+            </DockPanel>
+        </Border>
+
+        <!-- Bookmarks bar -->
+        <Border Grid.Row="2" Background="#141925" BorderBrush="#252D3D" BorderThickness="0,0,0,1"
+                Padding="12,3">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="BookmarksPanel" Orientation="Horizontal" VerticalAlignment="Center" />
+            </ScrollViewer>
+        </Border>
+
+        <!-- Browser surface -->
+        <Grid x:Name="BrowserHost" Grid.Row="3" Background="#FFFFFF" />
+    </Grid>
+</Window>
