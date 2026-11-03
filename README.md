@@ -90,11 +90,11 @@ The address bar supports DuckDuckGo, Google, Microsoft Bing, Brave Search, Yande
 Текущий выбор в списке поисковых систем считывается непосредственно перед поиском и сохраняется при закрытии списка. Это предотвращает использование устаревшего значения поисковика.
 
 
-## Version 0.4.3 — new-tab search fix
+## Версия 0.4.3 — исправление поиска на странице новой вкладки
 
-The search field on the custom new-tab page now submits through a narrow CefSharp JavaScript bridge to the browser's `Navigate` method. It therefore uses the currently selected search engine from the toolbar instead of a hard-coded DuckDuckGo form action.
+Теперь поисковый запрос со страницы новой вкладки передается через специальный JavaScript-мост CefSharp в метод `Navigate` браузера. Благодаря этому используется поисковая система, выбранная на панели инструментов, а не жестко заданный в коде сервис DuckDuckGo.
 
 
-## Search submission fix (0.4.4)
+## Исправление механизма отправки поисковых запросов (0.4.4)
 
-The new-tab page submits search text using CefSharp.PostMessage. The WPF browser handles it through JavascriptMessageReceived and calls the common navigation/search routine, which uses the currently selected search engine. Search results load in the current tab.
+На странице новой вкладки поисковый запрос отправляется с помощью `CefSharp.PostMessage`. Браузер WPF перехватывает это сообщение через событие `JavascriptMessageReceived` и вызывает общую процедуру навигации/поиска, которая использует выбранную в данный момент поисковую систему. Результаты поиска загружаются в текущей вкладке.
