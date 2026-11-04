@@ -64,9 +64,9 @@ dotnet run --project BlatmetroBrowser.csproj -c Release
 Исходники подготовлены в среде без Windows/.NET SDK, поэтому здесь не выполнялась реальная компиляция и запуск WPF/CEF. Сборку нужно проверить на Windows с установленным .NET 10 SDK.
 
 
-## Search engines
+## Поисковые системы
 
-The address bar supports DuckDuckGo, Google, Microsoft Bing, Brave Search, Yandex, Ecosia, Qwant, Startpage, and Yahoo. Choose an engine from the selector on the right side of the toolbar. The selection is saved in `%APPDATA%\Blatmetro\Browser\settings.json`.
+Адресная строка поддерживает DuckDuckGo, Google, Microsoft Bing, Brave Search, Yandex, Ecosia, Qwant, Startpage и Yahoo. Выберите поисковую систему в меню, расположенном в правой части панели инструментов. Ваш выбор сохраняется в файле `%APPDATA%\Blatmetro\Browser\settings.json`.
 
 
 ## Поисковые системы
@@ -90,31 +90,30 @@ The address bar supports DuckDuckGo, Google, Microsoft Bing, Brave Search, Yande
 Текущий выбор в списке поисковых систем считывается непосредственно перед поиском и сохраняется при закрытии списка. Это предотвращает использование устаревшего значения поисковика.
 
 
-## Version 0.4.3 — new-tab search fix
+## Версия 0.4.3 — исправление поиска на странице новой вкладки
 
-The search field on the custom new-tab page now submits through a narrow CefSharp JavaScript bridge to the browser's `Navigate` method. It therefore uses the currently selected search engine from the toolbar instead of a hard-coded DuckDuckGo form action.
+Теперь поисковое поле на пользовательской странице новой вкладки передает запрос через специальный JavaScript-мост CefSharp к методу `Navigate` браузера. Благодаря этому используется поисковая система, выбранная на панели инструментов, а не жестко заданный в коде сервис DuckDuckGo.
+
+## Исправление отправки поисковых запросов (0.4.4)
+
+На странице новой вкладки поисковый запрос отправляется с помощью `CefSharp.PostMessage`. WPF-браузер перехватывает это сообщение через событие `JavascriptMessageReceived` и вызывает общую процедуру навигации/поиска, которая использует текущую выбранную поисковую систему. Результаты поиска загружаются в текущей вкладке.
+
+## В разработке: выбор поисковой системы
+
+Текущая рабочая версия включает обновленный инструмент выбора поисковой системы с локальными значками, а также три режима оформления: «Системный», «Светлый» и «Темный». Режим «Системный» ориентируется на настройки темы приложений в Windows (`AppsUseLightTheme`) и автоматически реагирует на их изменение. Выбранный режим сохраняется в настройках пользователя.
+
+Файлы значков поисковых систем (в формате PNG) при сборке проекта копируются в выходную папку и папку для публикации. Информацию об источниках значков и товарных знаках можно найти в файле `Assets/SearchEngines/ASSETS-NOTICE.md`.
+
+Это промежуточное обновление исходного кода, а не официальный релиз. Перед выпуском новой версии необходимо выполнить сборку и тестирование в среде Windows. Интерфейс WPF-браузера и встроенная стартовая страница `Assets/NewTab.html` адаптируются к выбранному режиму оформления. Браузер также передает движку Chromium указание эмулировать медиа-запрос `prefers-color-scheme`, что позволяет сайтам, поддерживающим автоматическое переключение тем, менять оформление вслед за браузером. Сайты, которые не следуют этому стандарту или используют собственную принудительно заданную тему, могут не менять свой вид. Браузер не выполняет инверсию цветов и не меняет принудительно цветовую схему содержимого веб-страниц.
 
 
-## Search submission fix (0.4.4)
+## Режимы оформления (актуальная версия)
 
-The new-tab page submits search text using CefSharp.PostMessage. The WPF browser handles it through JavascriptMessageReceived and calls the common navigation/search routine, which uses the currently selected search engine. Search results load in the current tab.
+В меню выбора оформления на панели инструментов доступны три режима:
 
-## Unreleased working changes — search engine selector
-
-The current working copy includes a redesigned search-engine selector with local icon assets, plus three appearance modes: System, Light, and Dark. System follows the Windows app-theme preference (`AppsUseLightTheme`) and reacts to Windows preference-change notifications. The mode is saved in the user settings.
-
-The search engine icon PNGs are copied to the output and publish folders by the project file. See `Assets/SearchEngines/ASSETS-NOTICE.md` for icon-source and trademark notes.
-
-This is an in-progress source update, not a published release. Build and test it on Windows before creating a new release. The WPF browser chrome and the bundled `Assets/NewTab.html` start page follow the selected mode. The browser also tells Chromium to emulate the selected `prefers-color-scheme` media feature, so sites that support automatic light/dark themes can switch with the browser. Pages that ignore this standard or have their own manually selected theme may not change. The browser does not invert or forcibly recolor arbitrary website content.
-
-
-## Theme modes (working update)
-
-The toolbar theme selector provides three modes:
-
-- **Системная** — follows the Windows app appearance preference (`AppsUseLightTheme`) and updates when Windows reports a user-preference change.
-- **Светлая** — uses a light browser interface, light new-tab page, and tells Chromium that `prefers-color-scheme` is `light`.
-- **Тёмная** — uses a dark browser interface, dark new-tab page, and tells Chromium that `prefers-color-scheme` is `dark`.
+- **Системная** — соответствует настройкам внешнего вида приложений в Windows (`AppsUseLightTheme`) и обновляется при их изменении пользователем.
+- **Светлая** — интерфейс браузера и страница новой вкладки отображаются в светлых тонах; для движка Chromium задается параметр `prefers-color-scheme: light`.
+- **Тёмная** — интерфейс браузера и страница новой вкладки отображаются в тёмных тонах; для движка Chromium задается параметр `prefers-color-scheme: dark`..
 
 The selected mode is stored in `%APPDATA%\Blatmetro\Browser\settings.json`. Existing `Light` and `Dark` settings from older builds remain valid. Website colors change only when the site supports the standard `prefers-color-scheme` feature; the browser does not apply a forced color inversion to pages.
 
@@ -122,12 +121,12 @@ The selected mode is stored in `%APPDATA%\Blatmetro\Browser\settings.json`. Exis
 
 Blatmetro Browser запускается в одном процессе, потому что все вкладки используют общий профиль Chromium в `%LOCALAPPDATA%\Blatmetro\Browser`. Повторный запуск не инициализирует второй экземпляр CEF и не открывает тот же профиль параллельно; вместо этого появляется сообщение о том, что браузер уже запущен. Для нескольких страниц используйте вкладки внутри браузера.
 
-## Experimental Windows startup build
+## Экспериментальная сборка для запуска в Windows
 
-This test package includes the WPF SelfHost entry point for CefSharp:
-- `Program.cs` dispatches CEF child processes before starting WPF or creating the single-instance mutex.
-- `App.xaml.cs` initializes CefSharp with `performDependencyCheck: false` and writes a diagnostic log to `%LOCALAPPDATA%\Blatmetro\Browser\cef.log`.
-- `disable-gpu` is enabled as a diagnostic compatibility fallback for older graphics drivers; this can disable WebGL and hardware-accelerated rendering.
-- `do-not-de-elevate` is enabled to work around Chromium auto-de-elevation behavior reported by some Windows/CEF combinations.
+Данный тестовый пакет содержит точку входа WPF SelfHost для CefSharp:
+- `Program.cs` выполняет запуск дочерних процессов CEF еще до инициализации WPF или создания мьютекса для обеспечения единственного экземпляра приложения.
+- `App.xaml.cs` инициализирует CefSharp с параметром `performDependencyCheck: false` и записывает диагностический лог в файл `%LOCALAPPDATA%\Blatmetro\Browser\cef.log`.
+- Включен флаг `disable-gpu` — это мера совместимости для случаев использования устаревших графических драйверов; при этом могут быть отключены WebGL и аппаратное ускорение отрисовки.
+- Включен параметр `do-not-de-elevate` для обхода механизма автоматического понижения прав (auto-de-elevation) в Chromium, который может проявляться в некоторых конфигурациях Windows/CEF.
 
-This is a test source package, not a compiled release. Build and test it before considering distribution. User data remains outside the project under AppData.
+Это тестовый пакет исходного кода, а не готовый к распространению скомпилированный продукт. Перед тем как рассматривать возможность распространения, выполните сборку и тестирование. Пользовательские данные сохраняются вне папки проекта — в директории AppData.
