@@ -4,8 +4,8 @@
         Title="Blatmetro Browser"
         Width="1280" Height="820" MinWidth="800" MinHeight="540"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource WindowBackground}"
-        Foreground="{StaticResource TextPrimary}"
+        Background="{DynamicResource WindowBackground}"
+        Foreground="{DynamicResource TextPrimary}"
         FontFamily="Segoe UI"
         PreviewKeyDown="Window_PreviewKeyDown">
     <Grid>
@@ -17,7 +17,7 @@
         </Grid.RowDefinitions>
 
         <!-- Tab strip -->
-        <Border Grid.Row="0" Background="#0C0F16" Padding="8,5,8,0">
+        <Border Grid.Row="0" Background="{DynamicResource TabStripBackground}" Padding="8,5,8,0">
             <DockPanel LastChildFill="True">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button Style="{StaticResource ToolbarButton}"
@@ -37,7 +37,7 @@
         </Border>
 
         <!-- Navigation toolbar -->
-        <Border Grid.Row="1" Background="{StaticResource Surface}" Padding="10,7">
+        <Border Grid.Row="1" Background="{DynamicResource Surface}" Padding="10,7">
             <DockPanel LastChildFill="True">
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button x:Name="BackButton" Style="{StaticResource ToolbarButton}" Content="←"
@@ -51,18 +51,32 @@
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <ComboBox x:Name="SearchEngineBox" Width="132" Height="34" Margin="0,0,8,0"
-                              VerticalContentAlignment="Center" ToolTip="Поисковая система"
-                              SelectionChanged="SearchEngineBox_SelectionChanged" DropDownClosed="SearchEngineBox_DropDownClosed"
-                              Background="#202737" Foreground="#F3F4FA"
-                              BorderBrush="#30394B" />
+                    <ComboBox x:Name="SearchEngineBox" Width="204" Height="36" Margin="0,0,6,0"
+                              VerticalContentAlignment="Center" ToolTip="Выбрать поисковую систему"
+                              SelectionChanged="SearchEngineBox_SelectionChanged"
+                              DropDownClosed="SearchEngineBox_DropDownClosed"
+                              SelectedValuePath="Name"
+                              ItemTemplate="{StaticResource SearchEngineItemTemplate}"
+                              ItemContainerStyle="{StaticResource SearchEngineComboBoxItemStyle}"
+                              Style="{StaticResource SearchEngineComboBoxStyle}" />
+                    <ComboBox x:Name="ThemeModeBox" Width="126" Height="36" Margin="0,0,5,0"
+                              VerticalContentAlignment="Center" ToolTip="Тема оформления браузера"
+                              SelectedValuePath="Tag"
+                              SelectionChanged="ThemeModeBox_SelectionChanged"
+                              ItemContainerStyle="{StaticResource ThemeModeComboBoxItemStyle}"
+                              Style="{StaticResource ThemeModeComboBoxStyle}">
+                        <ComboBoxItem Content="Системная" Tag="System" />
+                        <ComboBoxItem Content="Светлая" Tag="Light" />
+                        <ComboBoxItem Content="Тёмная" Tag="Dark" />
+                    </ComboBox>
                     <Button x:Name="BookmarkButton" Style="{StaticResource ToolbarButton}" Content="☆"
                             FontSize="20" ToolTip="Добавить или удалить закладку" Click="Bookmark_Click" />
                 </StackPanel>
 
-                <Border Margin="10,0" CornerRadius="10" Background="#202737" BorderBrush="#30394B" BorderThickness="1">
+                <Border Margin="10,0" CornerRadius="10" Background="{DynamicResource AddressBackground}"
+                        BorderBrush="{DynamicResource AddressBorder}" BorderThickness="1">
                     <DockPanel LastChildFill="True">
-                        <TextBlock DockPanel.Dock="Left" Text="⌕" FontSize="20" Foreground="{StaticResource TextSecondary}"
+                        <TextBlock DockPanel.Dock="Left" Text="⌕" FontSize="20" Foreground="{DynamicResource TextSecondary}"
                                    VerticalAlignment="Center" Margin="12,0,0,0" />
                         <TextBox x:Name="AddressBox" Style="{StaticResource AddressBoxStyle}"
                                  Background="Transparent" BorderThickness="0"
@@ -74,8 +88,8 @@
         </Border>
 
         <!-- Bookmarks bar -->
-        <Border Grid.Row="2" Background="#141925" BorderBrush="#252D3D" BorderThickness="0,0,0,1"
-                Padding="12,3">
+        <Border Grid.Row="2" Background="{DynamicResource BookmarkBarBackground}"
+                BorderBrush="{DynamicResource BookmarkBorder}" BorderThickness="0,0,0,1" Padding="12,3">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                 <StackPanel x:Name="BookmarksPanel" Orientation="Horizontal" VerticalAlignment="Center" />
             </ScrollViewer>

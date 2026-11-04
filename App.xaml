@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnMainWindowClose">
     <Application.Resources>
+        <!-- Initial palette: dark. MainWindow can switch these brushes at runtime. -->
         <SolidColorBrush x:Key="WindowBackground" Color="#10131B" />
         <SolidColorBrush x:Key="Surface" Color="#191E2A" />
         <SolidColorBrush x:Key="SurfaceHover" Color="#252D3D" />
@@ -10,9 +11,243 @@
         <SolidColorBrush x:Key="Accent" Color="#8B7CFF" />
         <SolidColorBrush x:Key="TextPrimary" Color="#F3F4FA" />
         <SolidColorBrush x:Key="TextSecondary" Color="#A6AEC0" />
+        <SolidColorBrush x:Key="TabStripBackground" Color="#0C0F16" />
+        <SolidColorBrush x:Key="TabActiveBackground" Color="#303B50" />
+        <SolidColorBrush x:Key="TabInactiveBackground" Color="#191E2A" />
+        <SolidColorBrush x:Key="BookmarkBarBackground" Color="#141925" />
+        <SolidColorBrush x:Key="BookmarkBorder" Color="#252D3D" />
+        <SolidColorBrush x:Key="AddressBackground" Color="#202737" />
+        <SolidColorBrush x:Key="AddressBorder" Color="#39445A" />
+        <SolidColorBrush x:Key="SearchControlBackground" Color="#202737" />
+        <SolidColorBrush x:Key="SearchControlBorder" Color="#39445A" />
+        <SolidColorBrush x:Key="SearchPopupBackground" Color="#171D2A" />
+        <SolidColorBrush x:Key="SearchPopupBorder" Color="#3A4560" />
+        <SolidColorBrush x:Key="SearchItemHoverBackground" Color="#252D3D" />
+        <SolidColorBrush x:Key="SearchItemSelectedBackground" Color="#332D5E" />
+        <SolidColorBrush x:Key="SearchIconTileBackground" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="SearchFocusBorder" Color="#8B7CFF" />
+
+        <DataTemplate x:Key="SearchEngineItemTemplate">
+            <Grid MinWidth="190">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="30" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Width="26" Height="26" CornerRadius="7"
+                        Background="{DynamicResource SearchIconTileBackground}"
+                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <Image Source="{Binding Icon}" Width="19" Height="19" Stretch="Uniform"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                </Border>
+                <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="9,0,2,0"
+                           Foreground="{DynamicResource TextPrimary}"
+                           FontSize="13" FontWeight="Medium" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="SearchEngineComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="9,5" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ItemSurface" Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Stretch" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemSurface" Property="Background"
+                                        Value="{DynamicResource SearchItemHoverBackground}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemSurface" Property="Background"
+                                        Value="{DynamicResource SearchItemSelectedBackground}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SearchEngineComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="Background" Value="{DynamicResource SearchControlBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SearchControlBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="9,3" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="MaxDropDownHeight" Value="360" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="ControlSurface" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter x:Name="SelectionPresenter"
+                                                  Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                                  ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                                  VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                  IsHitTestVisible="False" />
+                            </Border>
+                            <Path Data="M 0 0 L 4 4 L 8 0" Stroke="{DynamicResource TextSecondary}"
+                                  StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Margin="0,0,12,0" IsHitTestVisible="False" />
+                            <ToggleButton x:Name="DropDownToggle" Background="Transparent"
+                                          BorderThickness="0" Focusable="False" Opacity="0.01"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                              RelativeSource={RelativeSource TemplatedParent}}" />
+                            <Popup x:Name="PART_Popup" Placement="Bottom"
+                                   PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False" StaysOpen="False"
+                                   PopupAnimation="Fade" VerticalOffset="6">
+                                <Border Width="232" Background="{DynamicResource SearchPopupBackground}"
+                                        BorderBrush="{DynamicResource SearchPopupBorder}" BorderThickness="1"
+                                        CornerRadius="12" Padding="4">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="18" ShadowDepth="5" Opacity="0.20" />
+                                    </Border.Effect>
+                                    <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled"
+                                                  CanContentScroll="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ControlSurface" Property="BorderBrush"
+                                        Value="{DynamicResource SearchFocusBorder}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="ControlSurface" Property="BorderBrush"
+                                        Value="{DynamicResource SearchFocusBorder}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ControlSurface" Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ThemeModeComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="9,7" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ItemSurface" Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Stretch" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemSurface" Property="Background"
+                                        Value="{DynamicResource SearchItemHoverBackground}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemSurface" Property="Background"
+                                        Value="{DynamicResource SearchItemSelectedBackground}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ThemeModeComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="Background" Value="{DynamicResource SearchControlBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SearchControlBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="9,3" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MaxDropDownHeight" Value="180" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="ControlSurface" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                                  VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                  IsHitTestVisible="False" />
+                            </Border>
+                            <Path Data="M 0 0 L 4 4 L 8 0" Stroke="{DynamicResource TextSecondary}"
+                                  StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Margin="0,0,11,0" IsHitTestVisible="False" />
+                            <ToggleButton Background="Transparent" BorderThickness="0" Focusable="False"
+                                          Opacity="0.01"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                              RelativeSource={RelativeSource TemplatedParent}}" />
+                            <Popup x:Name="PART_Popup" Placement="Bottom"
+                                   PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False" StaysOpen="False"
+                                   PopupAnimation="Fade" VerticalOffset="6">
+                                <Border Width="140" Background="{DynamicResource SearchPopupBackground}"
+                                        BorderBrush="{DynamicResource SearchPopupBorder}" BorderThickness="1"
+                                        CornerRadius="12" Padding="4">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="18" ShadowDepth="5" Opacity="0.20" />
+                                    </Border.Effect>
+                                    <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled" CanContentScroll="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ControlSurface" Property="BorderBrush"
+                                        Value="{DynamicResource SearchFocusBorder}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="ControlSurface" Property="BorderBrush"
+                                        Value="{DynamicResource SearchFocusBorder}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <Style TargetType="Button" x:Key="ToolbarButton">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="10,7" />
@@ -22,15 +257,16 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="{StaticResource SurfaceHover}" />
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource SurfaceHover}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="{StaticResource SurfaceActive}" />
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource SurfaceActive}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.35" />
@@ -42,13 +278,13 @@
         </Style>
 
         <Style TargetType="TextBox" x:Key="AddressBoxStyle">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
-            <Setter Property="Background" Value="#202737" />
-            <Setter Property="BorderBrush" Value="#30394B" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+            <Setter Property="Background" Value="{DynamicResource AddressBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AddressBorder}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="13,8" />
             <Setter Property="FontSize" Value="14" />
-            <Setter Property="CaretBrush" Value="White" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextPrimary}" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
     </Application.Resources>

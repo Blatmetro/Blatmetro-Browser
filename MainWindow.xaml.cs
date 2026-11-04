@@ -4,7 +4,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 using CefSharp;
+using CefSharp.DevTools.Emulation;
 using CefSharp.Wpf;
 
 namespace BlatmetroBrowser;
@@ -34,7 +37,9 @@ public partial class MainWindow : Window
         "Browser");
     private readonly string _bookmarksFile;
     private readonly string _settingsFile;
+    private readonly List<SearchEngineOption> _searchEngineOptions;
     private string _selectedSearchEngine = DefaultSearchEngine;
+    private string _selectedTheme = "System";
     private bool _loadingSettings;
     private List<Bookmark> _bookmarks = [];
     private BrowserTab? _activeTab;
@@ -51,12 +56,229 @@ public partial class MainWindow : Window
         _settingsFile = Path.Combine(_appDataDirectory, "settings.json");
         LoadBookmarks();
         LoadSettings();
+        _searchEngineOptions = CreateSearchEngineOptions();
         _loadingSettings = true;
-        SearchEngineBox.ItemsSource = SearchEngines.Keys.ToList();
-        SearchEngineBox.SelectedItem = _selectedSearchEngine;
+        SearchEngineBox.ItemsSource = _searchEngineOptions;
+        SearchEngineBox.SelectedValue = _selectedSearchEngine;
+        ThemeModeBox.SelectedValue = _selectedTheme;
         _loadingSettings = false;
+
+        // Follow Windows app-theme changes only while the user has selected System.
+        SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
+        ApplyTheme();
         RefreshBookmarksBar();
         AddTab();
+    }
+
+    private static readonly (string Name, string IconFile)[] SearchEngineCatalog =
+    [
+        ("DuckDuckGo", "duckduckgo.png"),
+        ("Google", "google.png"),
+        ("Microsoft Bing", "bing.png"),
+        ("Brave Search", "brave.png"),
+        ("Яндекс", "yandex.png"),
+        ("Ecosia", "ecosia.png"),
+        ("Qwant", "qwant.png"),
+        ("Startpage", "startpage.png"),
+        ("Yahoo", "yahoo.png"),
+        ("PrivacyWall", "privacywall.png"),
+        ("Perplexity", "perplexity.png"),
+        ("@MAIL.RU", "mailru.png")
+    ];
+
+    private static List<SearchEngineOption> CreateSearchEngineOptions()
+    {
+        var options = new List<SearchEngineOption>(SearchEngineCatalog.Length);
+        foreach (var (name, iconFile) in SearchEngineCatalog)
+        {
+            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "SearchEngines", iconFile);
+            if (!File.Exists(iconPath))
+            {
+                throw new FileNotFoundException($"Не найден логотип поисковика: {iconFile}", iconPath);
+            }
+
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(iconPath, UriKind.Absolute);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.DecodePixelWidth = 48;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            options.Add(new SearchEngineOption(name, bitmap));
+        }
+
+        return options;
+    }
+
+    private static bool IsValidThemeMode(string? theme) =>
+        theme is not null &&
+        (theme.Equals("System", StringComparison.OrdinalIgnoreCase) ||
+         theme.Equals("Light", StringComparison.OrdinalIgnoreCase) ||
+         theme.Equals("Dark", StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsWindowsAppThemeLight()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(
+                @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            var value = key?.GetValue("AppsUseLightTheme");
+            return value is int lightTheme ? lightTheme != 0 : true;
+        }
+        catch (System.Security.SecurityException)
+        {
+            return true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return true;
+        }
+    }
+
+    private string GetEffectiveTheme()
+    {
+        if (_selectedTheme.Equals("System", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsWindowsAppThemeLight() ? "Light" : "Dark";
+        }
+
+        return _selectedTheme.Equals("Light", StringComparison.OrdinalIgnoreCase) ? "Light" : "Dark";
+    }
+
+    private void ApplyTheme()
+    {
+        var effectiveTheme = GetEffectiveTheme();
+        var isDark = effectiveTheme.Equals("Dark", StringComparison.OrdinalIgnoreCase);
+        var palette = isDark
+            ? new Dictionary<string, string>
+            {
+                ["WindowBackground"] = "#10131B", ["Surface"] = "#191E2A",
+                ["SurfaceHover"] = "#252D3D", ["SurfaceActive"] = "#303B50",
+                ["Accent"] = "#8B7CFF", ["TextPrimary"] = "#F3F4FA", ["TextSecondary"] = "#A6AEC0",
+                ["TabStripBackground"] = "#0C0F16", ["TabActiveBackground"] = "#303B50",
+                ["TabInactiveBackground"] = "#191E2A", ["BookmarkBarBackground"] = "#141925",
+                ["BookmarkBorder"] = "#252D3D", ["AddressBackground"] = "#202737",
+                ["AddressBorder"] = "#39445A", ["SearchControlBackground"] = "#202737",
+                ["SearchControlBorder"] = "#39445A", ["SearchPopupBackground"] = "#171D2A",
+                ["SearchPopupBorder"] = "#3A4560", ["SearchItemHoverBackground"] = "#252D3D",
+                ["SearchItemSelectedBackground"] = "#332D5E", ["SearchIconTileBackground"] = "#FFFFFF",
+                ["SearchFocusBorder"] = "#8B7CFF"
+            }
+            : new Dictionary<string, string>
+            {
+                ["WindowBackground"] = "#F5F7FB", ["Surface"] = "#FFFFFF",
+                ["SurfaceHover"] = "#EEF1F7", ["SurfaceActive"] = "#E4E9F3",
+                ["Accent"] = "#6757E8", ["TextPrimary"] = "#1B2333", ["TextSecondary"] = "#657087",
+                ["TabStripBackground"] = "#E9EDF5", ["TabActiveBackground"] = "#FFFFFF",
+                ["TabInactiveBackground"] = "#E6EAF2", ["BookmarkBarBackground"] = "#F7F8FC",
+                ["BookmarkBorder"] = "#DCE2ED", ["AddressBackground"] = "#FFFFFF",
+                ["AddressBorder"] = "#D5DCE8", ["SearchControlBackground"] = "#FFFFFF",
+                ["SearchControlBorder"] = "#D4DCE8", ["SearchPopupBackground"] = "#FFFFFF",
+                ["SearchPopupBorder"] = "#D9DFEA", ["SearchItemHoverBackground"] = "#F0F2F8",
+                ["SearchItemSelectedBackground"] = "#ECE9FF", ["SearchIconTileBackground"] = "#F4F6FA",
+                ["SearchFocusBorder"] = "#7462F4"
+            };
+
+        foreach (var (key, hex) in palette)
+        {
+            if (ColorConverter.ConvertFromString(hex) is Color color)
+            {
+                Application.Current.Resources[key] = new SolidColorBrush(color);
+            }
+        }
+
+        ThemeModeBox.ToolTip = _selectedTheme switch
+        {
+            "System" => $"Тема: Системная ({(isDark ? "тёмная" : "светлая")})",
+            "Light" => "Тема: Светлая",
+            _ => "Тема: Тёмная"
+        };
+
+        foreach (var tab in _tabs)
+        {
+            tab.Header.SetResourceReference(Border.BackgroundProperty,
+                tab == _activeTab ? "TabActiveBackground" : "TabInactiveBackground");
+
+            // Tell Chromium which color scheme the user selected. Pages that support
+            // prefers-color-scheme can update their own CSS without being force-recolored.
+            _ = ApplyWebsiteColorSchemeAsync(tab.Browser, effectiveTheme);
+
+            // The bundled start page has its own theme variables, so update it directly too.
+            if (IsNewTabAddress(tab.Browser.Address))
+            {
+                try
+                {
+                    tab.Browser.ExecuteScriptAsync(
+                        $"window.setBlatmetroTheme && window.setBlatmetroTheme('{effectiveTheme.ToLowerInvariant()}');");
+                }
+                catch (InvalidOperationException)
+                {
+                    // The initial URL also carries the selected theme, so first render is correct.
+                }
+            }
+        }
+    }
+
+    private async Task ApplyWebsiteColorSchemeAsync(ChromiumWebBrowser browser, string? effectiveTheme = null)
+    {
+        if (!browser.IsBrowserInitialized)
+        {
+            return;
+        }
+
+        var colorScheme = (effectiveTheme ?? GetEffectiveTheme()).ToLowerInvariant();
+
+        try
+        {
+            // CDP Emulation.setEmulatedMedia changes the live CSS media-query value.
+            // This raises matchMedia('(prefers-color-scheme: ...)') changes in pages
+            // that implement automatic light/dark appearance.
+            var devTools = browser.GetDevToolsClient();
+            await devTools.Emulation.SetEmulatedMediaAsync(
+                media: string.Empty,
+                features: new List<MediaFeature>
+                {
+                    new()
+                    {
+                        Name = "prefers-color-scheme",
+                        Value = colorScheme
+                    }
+                });
+        }
+        catch (Exception ex)
+        {
+            // A page remains usable even if this CEF build cannot apply the emulation.
+            System.Diagnostics.Debug.WriteLine($"Unable to apply website color scheme: {ex.Message}");
+        }
+    }
+
+    private void ThemeModeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings || ThemeModeBox.SelectedValue is not string theme || !IsValidThemeMode(theme))
+        {
+            return;
+        }
+
+        _selectedTheme = theme;
+        ApplyTheme();
+        SaveSettings();
+    }
+
+    private void SystemEvents_UserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
+    {
+        if (!_selectedTheme.Equals("System", StringComparison.OrdinalIgnoreCase) ||
+            Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+        {
+            return;
+        }
+
+        _ = Dispatcher.BeginInvoke(() =>
+        {
+            if (_selectedTheme.Equals("System", StringComparison.OrdinalIgnoreCase))
+            {
+                ApplyTheme();
+            }
+        });
     }
 
     private void AddTab(string? initialAddress = null)
@@ -66,6 +288,15 @@ public partial class MainWindow : Window
             BrowserSettings =
             {
                 DefaultEncoding = "UTF-8"
+            }
+        };
+
+        // Apply the selected website color scheme as soon as this tab's CEF target exists.
+        browser.IsBrowserInitializedChanged += (_, _) =>
+        {
+            if (browser.IsBrowserInitialized)
+            {
+                _ = ApplyWebsiteColorSchemeAsync(browser);
             }
         };
 
@@ -83,17 +314,18 @@ public partial class MainWindow : Window
         var title = new TextBlock
         {
             Text = "Новая вкладка",
-            Foreground = Brushes.White,
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
             MaxWidth = 150
         };
 
+        title.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimary");
+
         var closeButton = new Button
         {
             Content = "×",
-            Foreground = new SolidColorBrush(Color.FromRgb(166, 174, 192)),
+
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
             Padding = new Thickness(5, 0, 5, 1),
@@ -101,6 +333,7 @@ public partial class MainWindow : Window
             Cursor = Cursors.Hand,
             ToolTip = "Закрыть вкладку"
         };
+        closeButton.SetResourceReference(Control.ForegroundProperty, "TextSecondary");
 
         var headerContent = new StackPanel
         {
@@ -113,13 +346,13 @@ public partial class MainWindow : Window
         var header = new Border
         {
             Child = headerContent,
-            Background = new SolidColorBrush(Color.FromRgb(25, 30, 42)),
             CornerRadius = new CornerRadius(8, 8, 0, 0),
             Padding = new Thickness(12, 7, 6, 7),
             Margin = new Thickness(0, 0, 5, 0),
             MinWidth = 130,
             Cursor = Cursors.Hand
         };
+        header.SetResourceReference(Border.BackgroundProperty, "TabInactiveBackground");
 
         var tab = new BrowserTab(browser, header, title);
         _tabs.Add(tab);
@@ -154,15 +387,23 @@ public partial class MainWindow : Window
             : initialAddress;
     }
 
-    private bool IsNewTabAddress(string? address) =>
-        !string.IsNullOrWhiteSpace(address) &&
-        string.Equals(address, GetNewTabAddress(), StringComparison.OrdinalIgnoreCase);
+    private bool IsNewTabAddress(string? address)
+    {
+        if (!Uri.TryCreate(address, UriKind.Absolute, out var currentUri) || !currentUri.IsFile)
+        {
+            return false;
+        }
+
+        var newTabPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Assets", "NewTab.html"));
+        return string.Equals(Path.GetFullPath(currentUri.LocalPath), newTabPath,
+            StringComparison.OrdinalIgnoreCase);
+    }
 
     private string GetNewTabAddress()
     {
         var newTabPath = Path.Combine(AppContext.BaseDirectory, "Assets", "NewTab.html");
         return File.Exists(newTabPath)
-            ? new Uri(newTabPath).AbsoluteUri
+            ? $"{new Uri(newTabPath).AbsoluteUri}?theme={GetEffectiveTheme().ToLowerInvariant()}"
             : "https://duckduckgo.com/";
     }
 
@@ -174,9 +415,8 @@ public partial class MainWindow : Window
         {
             var isSelected = item == tab;
             item.Browser.Visibility = isSelected ? Visibility.Visible : Visibility.Hidden;
-            item.Header.Background = isSelected
-                ? new SolidColorBrush(Color.FromRgb(48, 59, 80))
-                : new SolidColorBrush(Color.FromRgb(25, 30, 42));
+            item.Header.SetResourceReference(Border.BackgroundProperty,
+                isSelected ? "TabActiveBackground" : "TabInactiveBackground");
         }
 
         AddressBox.Text = IsNewTabAddress(tab.Browser.Address) ? string.Empty : tab.Browser.Address ?? string.Empty;
@@ -240,10 +480,10 @@ public partial class MainWindow : Window
         {
             // Read the current ComboBox selection at the moment of searching.
             // This prevents a stale saved value from overriding the visible choice.
-            if (SearchEngineBox.SelectedItem is string selectedEngine &&
-                SearchEngines.ContainsKey(selectedEngine))
+            if (SearchEngineBox.SelectedItem is SearchEngineOption selectedEngine &&
+                SearchEngines.ContainsKey(selectedEngine.Name))
             {
-                _selectedSearchEngine = selectedEngine;
+                _selectedSearchEngine = selectedEngine.Name;
                 SaveSettings();
             }
 
@@ -285,22 +525,22 @@ public partial class MainWindow : Window
 
     private void SearchEngineBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_loadingSettings || SearchEngineBox.SelectedItem is not string selected ||
-            !SearchEngines.ContainsKey(selected))
+        if (_loadingSettings || SearchEngineBox.SelectedItem is not SearchEngineOption selected ||
+            !SearchEngines.ContainsKey(selected.Name))
         {
             return;
         }
 
-        _selectedSearchEngine = selected;
+        _selectedSearchEngine = selected.Name;
         SaveSettings();
     }
 
     private void SearchEngineBox_DropDownClosed(object sender, EventArgs e)
     {
-        if (!_loadingSettings && SearchEngineBox.SelectedItem is string selected &&
-            SearchEngines.ContainsKey(selected))
+        if (!_loadingSettings && SearchEngineBox.SelectedItem is SearchEngineOption selected &&
+            SearchEngines.ContainsKey(selected.Name))
         {
-            _selectedSearchEngine = selected;
+            _selectedSearchEngine = selected.Name;
             SaveSettings();
         }
     }
@@ -319,6 +559,11 @@ public partial class MainWindow : Window
             {
                 _selectedSearchEngine = engine;
             }
+
+            if (settings?.Theme is string theme && IsValidThemeMode(theme))
+            {
+                _selectedTheme = theme;
+            }
         }
         catch (IOException)
         {
@@ -334,7 +579,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var json = JsonSerializer.Serialize(new BrowserSettings(_selectedSearchEngine),
+            var json = JsonSerializer.Serialize(new BrowserSettings(_selectedSearchEngine, _selectedTheme),
                 new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_settingsFile, json);
         }
@@ -387,11 +632,11 @@ public partial class MainWindow : Window
             BookmarksPanel.Children.Add(new TextBlock
             {
                 Text = "Закладки появятся здесь",
-                Foreground = new SolidColorBrush(Color.FromRgb(130, 140, 158)),
                 FontSize = 11,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(2, 0, 0, 0)
             });
+            ((TextBlock)BookmarksPanel.Children[0]).SetResourceReference(TextBlock.ForegroundProperty, "TextSecondary");
             return;
         }
 
@@ -625,6 +870,8 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
+
         foreach (var tab in _tabs.ToArray())
         {
             tab.Browser.Dispose();
@@ -641,6 +888,7 @@ public partial class MainWindow : Window
     }
 
     private sealed record Bookmark(string Title, string Url);
-    private sealed record BrowserSettings(string SearchEngine);
+    private sealed record BrowserSettings(string SearchEngine, string? Theme = null);
+    private sealed record SearchEngineOption(string Name, ImageSource Icon);
 }
 

@@ -9,6 +9,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseAppHost>true</UseAppHost>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject>BlatmetroBrowser.Program</StartupObject>
     <AssemblyName>BlatmetroBrowser</AssemblyName>
     <RootNamespace>BlatmetroBrowser</RootNamespace>
     <Version>0.4.4</Version>
@@ -26,4 +27,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+
+
+<ItemGroup>
+  <Content Include="Assets\SearchEngines\**\*">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </Content>
+</ItemGroup>
 </Project>
