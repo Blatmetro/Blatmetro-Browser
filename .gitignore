@@ -1,8 +1,0 @@
-bin/
-obj/
-.vs/
-*.user
-*.suo
-publish/
-installer-output/
-BlatmetroBrowser-Setup-*.exe
