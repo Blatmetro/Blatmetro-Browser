@@ -121,7 +121,7 @@ dotnet run --project BlatmetroBrowser.csproj -c Release
 - **Светлая** — интерфейс браузера и страница новой вкладки отображаются в светлых тонах; для движка Chromium задается параметр `prefers-color-scheme: light`.
 - **Тёмная** — интерфейс браузера и страница новой вкладки отображаются в тёмных тонах; для движка Chromium задается параметр `prefers-color-scheme: dark`..
 
-The selected mode is stored in `%APPDATA%\Blatmetro\Browser\settings.json`. Existing `Light` and `Dark` settings from older builds remain valid. Website colors change only when the site supports the standard `prefers-color-scheme` feature; the browser does not apply a forced color inversion to pages.
+Выбранный режим сохраняется в файле `%APPDATA%\Blatmetro\Browser\settings.json`. Существующие настройки «Light» (светлая тема) и «Dark» (темная тема) из более ранних версий остаются актуальными. Цветовое оформление веб-сайтов меняется только в том случае, если сайт поддерживает стандартную функцию `prefers-color-scheme`; браузер не применяет принудительную инверсию цветов на страницах.
 
 ## Один экземпляр приложения
 
