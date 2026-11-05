@@ -1,0 +1,15 @@
+Blatmetro Browser — полный тестовый проект с CefSharp SelfHost
+
+ВАЖНО: это исходный проект для тестовой сборки, не готовый EXE-релиз.
+В проект включены последние UI-изменения, значки поисковиков, три режима темы,
+синхронизация prefers-color-scheme для сайтов и исправленная схема CefSharp SelfHost.
+
+Сборка (PowerShell, .NET 10 SDK):
+  dotnet clean .\BlatmetroBrowser.csproj -c Release
+  dotnet build .\BlatmetroBrowser.csproj -c Release
+
+После сборки запускать только один раз из bin\Release\net10.0-windows\win-x64.
+CEF log: %LOCALAPPDATA%\Blatmetro\Browser\cef.log
+
+Параметр disable-gpu включён как временная диагностика совместимости старой графики;
+он может отключить WebGL и аппаратное ускорение.

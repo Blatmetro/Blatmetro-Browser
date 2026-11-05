@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Новая вкладка — Blatmetro Browser</title>
+  <script>
+    (() => {
+      const requestedTheme = new URLSearchParams(window.location.search).get('theme');
+      document.documentElement.dataset.theme = requestedTheme === 'light' ? 'light' : 'dark';
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", Arial, sans-serif;
+      --page-background: radial-gradient(ellipse at 50% 22%, #29334a 0, #171d2a 46%, #10131b 100%);
+      --text-primary: #f3f4fa;
+      --text-secondary: #a6aec0;
+      --hint: #77839a;
+      --search-background: #202737;
+      --search-border: #39445a;
+      --input-text: #f3f4fa;
+      --button-background: #7669e9;
+      --button-hover: #8b7cff;
+      --shadow: #0004;
+    }
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --page-background: radial-gradient(ellipse at 50% 18%, #ffffff 0, #f7f8fc 52%, #edf0f7 100%);
+      --text-primary: #1b2333;
+      --text-secondary: #657087;
+      --hint: #77839a;
+      --search-background: #ffffff;
+      --search-border: #d5dce8;
+      --input-text: #1b2333;
+      --button-background: #6757e8;
+      --button-hover: #7667f1;
+      --shadow: #28334a14;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      color: var(--text-primary); background: var(--page-background);
+      transition: background 180ms ease, color 180ms ease;
+    }
+    main { width: min(680px, calc(100vw - 36px)); text-align: center; transform: translateY(-5vh); }
+    .mark {
+      width: 76px; height: 76px; margin: 0 auto 22px; display: grid; place-items: center;
+      border-radius: 24px; color: white; font-size: 26px; font-weight: 700; letter-spacing: -2px;
+      background: linear-gradient(145deg, #9b8cff, #5d62d9); box-shadow: 0 14px 45px #7468e544;
+    }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 44px); letter-spacing: -1.5px; }
+    p { color: var(--text-secondary); margin: 12px 0 28px; font-size: 15px; }
+    form {
+      display: flex; gap: 8px; padding: 8px; border: 1px solid var(--search-border); border-radius: 16px;
+      background: var(--search-background); box-shadow: 0 16px 50px var(--shadow);
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+    input {
+      min-width: 0; flex: 1; border: 0; outline: 0; padding: 10px 12px; color: var(--input-text);
+      background: transparent; font: inherit; font-size: 15px;
+    }
+    input::placeholder { color: var(--hint); }
+    button {
+      border: 0; border-radius: 11px; padding: 0 18px; color: white; font: inherit; font-weight: 600;
+      cursor: pointer; background: var(--button-background); transition: background 140ms ease;
+    }
+    button:hover { background: var(--button-hover); }
+    .hint { margin-top: 18px; color: var(--hint); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark">BM</div>
+    <h1>Blatmetro Browser</h1>
+    <p>Ваш браузер. Ваш выбор. Ваш интернет.</p>
+    <form id="searchForm">
+      <input id="searchInput" name="q" type="search" autofocus placeholder="Поиск в интернете или адрес сайта" aria-label="Поиск в интернете">
+      <button type="submit">Найти</button>
+    </form>
+    <div class="hint">Поисковая система выбирается на панели браузера</div>
+    <script>
+      const searchForm = document.getElementById('searchForm');
+      const searchInput = document.getElementById('searchInput');
+
+      window.setBlatmetroTheme = (theme) => {
+        document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+      };
+
+      searchForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const query = searchInput.value.trim();
+        if (!query) return;
+
+        // CefSharp.PostMessage is handled by JavascriptMessageReceived in C#.
+        if (window.CefSharp && typeof CefSharp.PostMessage === 'function') {
+          CefSharp.PostMessage(query);
+        } else {
+          console.error('Blatmetro search bridge is unavailable.');
+        }
+      });
+    </script>
+  </main>
+</body>
+</html>
