@@ -54,6 +54,8 @@
         <!-- Tab strip -->
         <Border Grid.Row="0" Background="{DynamicResource TabStripBackground}" Padding="8,5,8,0">
             <DockPanel LastChildFill="True">
+                <Image DockPanel.Dock="Left" Width="26" Height="26" Margin="1,0,8,4"
+                       Source="Assets/BlatmetroBrowser.png" Stretch="Uniform" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button Style="{StaticResource ToolbarButton}"
                             Content="+" FontSize="21" Padding="9,1" ToolTip="Новая вкладка (Ctrl+T)"
@@ -114,8 +116,9 @@
                 <Border Margin="10,0" CornerRadius="10" Background="{DynamicResource AddressBackground}"
                         BorderBrush="{DynamicResource AddressBorder}" BorderThickness="1">
                     <DockPanel LastChildFill="True">
-                        <TextBlock DockPanel.Dock="Left" Text="⌕" FontSize="20" Foreground="{DynamicResource TextSecondary}"
-                                   VerticalAlignment="Center" Margin="12,0,0,0" />
+                        <TextBlock x:Name="SecurityIndicator" DockPanel.Dock="Left" Text="⌕" FontSize="16"
+                                   Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"
+                                   Margin="12,0,0,0" ToolTip="Введите адрес сайта" />
                         <TextBox x:Name="AddressBox" Style="{StaticResource AddressBoxStyle}"
                                  Background="Transparent" BorderThickness="0"
                                  ToolTip="Введите адрес сайта или поисковый запрос"
@@ -202,8 +205,7 @@
 
                     <Border Height="1" Margin="5,5" Background="{DynamicResource SearchPopupBorder}" />
 
-                    <Button Style="{StaticResource MenuActionButton}" IsEnabled="False"
-                            ToolTip="Менеджер загрузок пока не реализован">
+                    <Button Style="{StaticResource MenuActionButton}" Click="Downloads_Click">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="26" />
@@ -212,6 +214,20 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="↓" FontSize="15" />
                             <TextBlock Grid.Column="1" Text="Загрузки" />
+                            <TextBlock Grid.Column="2" Text="Ctrl+J"
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="11" />
+                        </Grid>
+                    </Button>
+                    <Button Style="{StaticResource MenuActionButton}" IsEnabled="False"
+                            ToolTip="Поддержка расширений появится в будущей версии">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="26" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="◇" FontSize="15" />
+                            <TextBlock Grid.Column="1" Text="Расширения" />
                             <TextBlock Grid.Column="2" Text="Скоро"
                                        Foreground="{DynamicResource TextSecondary}" FontSize="11" />
                         </Grid>

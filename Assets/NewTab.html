@@ -47,9 +47,10 @@
     main { width: min(680px, calc(100vw - 36px)); text-align: center; transform: translateY(-5vh); }
     .mark {
       width: 76px; height: 76px; margin: 0 auto 22px; display: grid; place-items: center;
-      border-radius: 24px; color: white; font-size: 26px; font-weight: 700; letter-spacing: -2px;
-      background: linear-gradient(145deg, #9b8cff, #5d62d9); box-shadow: 0 14px 45px #7468e544;
+      border-radius: 24px; overflow: hidden; background: #050507;
+      box-shadow: 0 14px 45px #7468e544;
     }
+    .mark img { width: 100%; height: 100%; object-fit: cover; }
     h1 { margin: 0; font-size: clamp(30px, 5vw, 44px); letter-spacing: -1.5px; }
     p { color: var(--text-secondary); margin: 12px 0 28px; font-size: 15px; }
     form {
@@ -72,7 +73,7 @@
 </head>
 <body>
   <main>
-    <div class="mark">BM</div>
+    <div class="mark"><img src="BlatmetroBrowser.png" alt="Логотип Blatmetro Browser"></div>
     <h1>Blatmetro Browser</h1>
     <p>Ваш браузер. Ваш выбор. Ваш интернет.</p>
     <form id="searchForm">
