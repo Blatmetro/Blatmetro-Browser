@@ -1,3 +1,5 @@
+Blatmetro Browser — версия 0.4.5
+
 ## Acknowledgements
 
 AI assistance: ChatGPT (OpenAI) — development assistance,
