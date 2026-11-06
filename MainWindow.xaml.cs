@@ -5,6 +5,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Diagnostics;
+using System.ComponentModel;
 using Microsoft.Win32;
 using CefSharp;
 using CefSharp.DevTools.Emulation;
@@ -43,6 +45,7 @@ public partial class MainWindow : Window
     private bool _loadingSettings;
     private List<Bookmark> _bookmarks = [];
     private BrowserTab? _activeTab;
+    private readonly Dictionary<int, DownloadEntry> _downloads = [];
     private bool _isFullscreen;
     private WindowStyle _previousWindowStyle;
     private ResizeMode _previousResizeMode;
@@ -51,6 +54,17 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        var logoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BlatmetroBrowser.png");
+        if (File.Exists(logoPath))
+        {
+            var logo = new BitmapImage();
+            logo.BeginInit();
+            logo.UriSource = new Uri(logoPath, UriKind.Absolute);
+            logo.CacheOption = BitmapCacheOption.OnLoad;
+            logo.EndInit();
+            logo.Freeze();
+            Icon = logo;
+        }
         Directory.CreateDirectory(_appDataDirectory);
         _bookmarksFile = Path.Combine(_appDataDirectory, "bookmarks.json");
         _settingsFile = Path.Combine(_appDataDirectory, "settings.json");
@@ -290,6 +304,8 @@ public partial class MainWindow : Window
                 DefaultEncoding = "UTF-8"
             }
         };
+        browser.DownloadHandler = new BrowserDownloadHandler(this);
+        browser.LifeSpanHandler = new PopupToTabHandler(this);
 
         // Apply the selected website color scheme as soon as this tab's CEF target exists.
         browser.IsBrowserInitializedChanged += (_, _) =>
@@ -307,7 +323,7 @@ public partial class MainWindow : Window
             var query = args.Message?.ToString();
             if (!string.IsNullOrWhiteSpace(query))
             {
-                Dispatcher.BeginInvoke(() => Navigate(query));
+                Dispatcher.BeginInvoke(() => HandlePageMessage(query));
             }
         };
 
@@ -368,6 +384,7 @@ public partial class MainWindow : Window
             {
                 var currentAddress = browser.Address;
                 AddressBox.Text = IsNewTabAddress(currentAddress) ? string.Empty : currentAddress;
+                UpdateSecurityIndicator(currentAddress);
                 UpdateBookmarkButton();
             }
         });
@@ -385,6 +402,22 @@ public partial class MainWindow : Window
         browser.Address = string.IsNullOrWhiteSpace(initialAddress)
             ? GetNewTabAddress()
             : initialAddress;
+    }
+
+    private void HandlePageMessage(string message)
+    {
+        if (message.StartsWith("download:cancel:", StringComparison.Ordinal) && int.TryParse(message[16..], out var cancelId))
+        {
+            if (_downloads.TryGetValue(cancelId, out var download)) download.Callback?.Cancel();
+            return;
+        }
+        if (message.StartsWith("download:open:", StringComparison.Ordinal) && int.TryParse(message[14..], out var openId))
+        {
+            if (_downloads.TryGetValue(openId, out var download) && download.Complete && File.Exists(download.Path))
+                Process.Start(new ProcessStartInfo(download.Path) { UseShellExecute = true });
+            return;
+        }
+        Navigate(message);
     }
 
     private bool IsNewTabAddress(string? address)
@@ -420,9 +453,32 @@ public partial class MainWindow : Window
         }
 
         AddressBox.Text = IsNewTabAddress(tab.Browser.Address) ? string.Empty : tab.Browser.Address ?? string.Empty;
+        UpdateSecurityIndicator(tab.Browser.Address);
         UpdateNavigationButtons();
         UpdateBookmarkButton();
         UpdateZoomLabel();
+    }
+
+    private void UpdateSecurityIndicator(string? address)
+    {
+        if (Uri.TryCreate(address, UriKind.Absolute, out var uri) && uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
+        {
+            SecurityIndicator.Text = "🔒";
+            SecurityIndicator.ToolTip = $"Защищённое HTTPS-соединение с {uri.Host}";
+            SecurityIndicator.Foreground = Brushes.SeaGreen;
+        }
+        else if (Uri.TryCreate(address, UriKind.Absolute, out uri) && uri.Scheme is "http")
+        {
+            SecurityIndicator.Text = "⚠";
+            SecurityIndicator.ToolTip = $"Незащищённое HTTP-соединение с {uri.Host}";
+            SecurityIndicator.Foreground = Brushes.DarkOrange;
+        }
+        else
+        {
+            SecurityIndicator.Text = "⌕";
+            SecurityIndicator.ToolTip = "Введите адрес сайта";
+            SecurityIndicator.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondary");
+        }
     }
 
     private void CloseTab(BrowserTab tab)
@@ -724,6 +780,102 @@ public partial class MainWindow : Window
         }
     }
 
+    private void Downloads_Click(object sender, RoutedEventArgs e)
+    {
+        CloseMainMenu();
+        var tab = _tabs.FirstOrDefault(t => t.IsDownloadsTab);
+        if (tab is null)
+        {
+            AddTab("about:blank");
+            tab = _activeTab!;
+            tab.IsDownloadsTab = true;
+            tab.Title.Text = "Загрузки";
+            var downloadsPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Downloads.html");
+            tab.Browser.Address = File.Exists(downloadsPath) ? new Uri(downloadsPath).AbsoluteUri : "about:blank";
+        }
+        SelectTab(tab);
+        RenderDownloads(tab);
+    }
+
+    private void RenderDownloads(BrowserTab? onlyTab = null)
+    {
+        foreach (var tab in onlyTab is null ? _tabs.Where(t => t.IsDownloadsTab) : [onlyTab])
+        {
+            if (!tab.Browser.IsBrowserInitialized || tab.Browser.IsLoading) continue;
+            var json = JsonSerializer.Serialize(_downloads.Values.OrderByDescending(d => d.Id).Select(d => new { d.Id, name=d.Name, size=$"{FormatBytes(d.Received)} / {FormatBytes(d.Total)}", status=d.Status, progress=d.Progress, complete=d.Complete && File.Exists(d.Path), active=d.InProgress }));
+            tab.Browser.ExecuteScriptAsync($"render({json});");
+        }
+    }
+
+    private static string FormatBytes(long bytes) => bytes < 0 ? "Размер неизвестен" : bytes < 1024 ? $"{bytes} Б" : bytes < 1024 * 1024 ? $"{bytes / 1024d:0.#} КБ" : $"{bytes / (1024d * 1024):0.#} МБ";
+
+    private void UpdateDownload(DownloadItem downloadItem, IDownloadItemCallback callback)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!_downloads.TryGetValue(downloadItem.Id, out var item))
+                _downloads[downloadItem.Id] = item = new DownloadEntry(downloadItem.Id);
+            item.Name = downloadItem.SuggestedFileName;
+            item.Path = downloadItem.FullPath;
+            item.Received = downloadItem.ReceivedBytes;
+            item.Total = downloadItem.TotalBytes;
+            item.Progress = downloadItem.PercentComplete;
+            item.Complete = downloadItem.IsComplete;
+            item.InProgress = downloadItem.IsInProgress;
+            item.Callback = callback;
+            item.Status = downloadItem.IsComplete ? "Завершено" : downloadItem.IsInProgress ? "Загрузка" : "Прервано или ошибка";
+            RenderDownloads();
+        });
+    }
+
+    private sealed class DownloadEntry(int id)
+    {
+        public int Id { get; } = id;
+        public string Name { get; set; } = "Загрузка";
+        public string Path { get; set; } = "";
+        public string Status { get; set; } = "Подготовка";
+        public long Received { get; set; }
+        public long Total { get; set; }
+        public int Progress { get; set; }
+        public bool Complete { get; set; }
+        public bool InProgress { get; set; }
+        public IDownloadItemCallback? Callback { get; set; }
+    }
+
+    private sealed class BrowserDownloadHandler(MainWindow owner) : CefSharp.Handler.DownloadHandler
+    {
+        protected override bool OnBeforeDownload(IWebBrowser chromiumWebBrowser, IBrowser browser, DownloadItem downloadItem, IBeforeDownloadCallback callback)
+        {
+            if (!callback.IsDisposed)
+            {
+                var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                Directory.CreateDirectory(directory);
+                var name = Path.GetFileName(downloadItem.SuggestedFileName);
+                callback.Continue(Path.Combine(directory, string.IsNullOrWhiteSpace(name) ? $"download-{downloadItem.Id}" : name), false);
+            }
+            return true;
+        }
+
+        protected override void OnDownloadUpdated(IWebBrowser chromiumWebBrowser, IBrowser browser, DownloadItem downloadItem, IDownloadItemCallback callback) => owner.UpdateDownload(downloadItem, callback);
+    }
+
+    private sealed class PopupToTabHandler(MainWindow owner) : CefSharp.Handler.LifeSpanHandler
+    {
+        protected override bool OnBeforePopup(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame,
+            string targetUrl, string targetFrameName, WindowOpenDisposition targetDisposition, bool userGesture,
+            IPopupFeatures popupFeatures, IWindowInfo windowInfo, IBrowserSettings browserSettings,
+            ref bool noJavascriptAccess, out IWebBrowser newBrowser)
+        {
+            newBrowser = null!;
+            var address = Uri.TryCreate(targetUrl, UriKind.Absolute, out var uri) &&
+                          uri.Scheme is "http" or "https" or "about"
+                ? targetUrl
+                : "about:blank";
+            owner.Dispatcher.BeginInvoke(() => owner.AddTab(address));
+            return true;
+        }
+    }
+
     private void CloseMainMenu() => MainMenuPopup.IsOpen = false;
 
     private void ZoomOut_Click(object sender, RoutedEventArgs e) => ChangeZoom(-1);
@@ -939,6 +1091,7 @@ public partial class MainWindow : Window
         public ChromiumWebBrowser Browser { get; } = browser;
         public Border Header { get; } = header;
         public TextBlock Title { get; } = title;
+        public bool IsDownloadsTab { get; set; }
     }
 
     private sealed record Bookmark(string Title, string Url);

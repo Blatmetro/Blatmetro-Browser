@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Загрузки — Blatmetro Browser</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:28px;background:#10131b;color:#f3f4fa;font:14px 'Segoe UI',sans-serif}
+main{max-width:900px;margin:auto}h1{font-size:24px;margin:0 0 20px}.item{padding:16px 0;border-bottom:1px solid #30394b}
+.name{font-weight:600;overflow-wrap:anywhere}.meta{color:#a6aec0;margin:6px 0 10px}progress{width:100%;height:8px;accent-color:#8b7cff}
+button{background:#252d3d;color:#f3f4fa;border:0;border-radius:6px;padding:7px 12px;margin:10px 8px 0 0;cursor:pointer}.empty{color:#a6aec0}
+</style><main><h1>Загрузки</h1><section id="items" class="empty">Загрузок пока нет</section></main>
+<script>
+function render(items){const root=document.getElementById('items');root.className=items.length?'':'empty';root.innerHTML=items.length?items.map(x=>`<article class="item"><div class="name">${esc(x.name)}</div><div class="meta">${esc(x.size)} · ${esc(x.status)}</div><progress max="100" value="${x.progress}"></progress><div>${x.complete?`<button onclick="act('open',${x.id})">Открыть файл</button>`:x.active?`<button onclick="act('cancel',${x.id})">Отменить</button>`:''}</div></article>`).join(''):'Загрузок пока нет';}
+function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function act(op,id){CefSharp.PostMessage(`download:${op}:${id}`)}
+</script></html>

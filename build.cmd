@@ -4,11 +4,11 @@ cd /d "%~dp0"
 echo Restoring NuGet packages...
 dotnet restore BlatmetroBrowser.csproj -r win-x64
 if errorlevel 1 goto :error
-echo Building Blatmetro Browser...
-dotnet build BlatmetroBrowser.csproj -c Release -r win-x64 --no-restore
+echo Publishing self-contained Blatmetro Browser for Windows x64...
+dotnet publish BlatmetroBrowser.csproj -c Release -r win-x64 --self-contained true -o publish\win-x64
 if errorlevel 1 goto :error
 echo.
-echo Build completed. Output: bin\Release\net10.0-windows\win-x64\
+echo Publish completed. Copy the entire publish\win-x64 folder to the target PC.
 pause
 exit /b 0
 :error
